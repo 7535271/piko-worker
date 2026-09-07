@@ -1,8 +1,0 @@
-name = "piko"
-main = "src/worker.js"
-compatibility_date = "2026-01-01"
-
-[[d1_databases]]
-binding = "DB"
-database_name = "piko"
-database_id = "ここにD1のIDを貼る"

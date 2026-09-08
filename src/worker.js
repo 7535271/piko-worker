@@ -383,6 +383,21 @@ export default {
       if (!okPass(pass)) {
         return json({ error: "locked" }, 401);
       }
+      /* ── Groq に今いるモデルを聞く ── */
+      if (url.pathname === "/groq-models") {
+        if (!env.GROQ_KEY) return json({ error: "no key" }, 400);
+        const r = await fetch("https://api.groq.com/openai/v1/models", {
+          headers: { Authorization: `Bearer ${env.GROQ_KEY}` },
+        });
+        const d = await r.json();
+        if (!r.ok) return json({ error: d?.error?.message || `groq ${r.status}` }, 500);
+        return json({
+          models: (d.data || [])
+            .map((m) => ({ id: m.id, owner: m.owned_by, ctx: m.context_window }))
+            .sort((a, b) => a.id.localeCompare(b.id)),
+        });
+      }
+
       /* ── 招待できる顔ぶれ ── */
       if (url.pathname === "/roster") {
         return json({ roster: roster(env) });

@@ -154,12 +154,16 @@ const HOMES = {
 
       let { ok, d, status } = await send(true);
       // JSONの型を守れない子は、指定を外して普通に喋らせる
-      if (!ok && /failed to generate json|json_validate|response_format/i.test(
-            d?.error?.message || "")) {
+      if (!ok && /json|response_format|schema/i.test(d?.error?.message || "")) {
         ({ ok, d, status } = await send(false));
       }
       if (!ok) throw new Error(d?.error?.message || `groq ${status}`);
-      return d?.choices?.[0]?.message?.content || "";
+      // 型指定が外れた子は、書きかけの中身が failed_generation に入っていることがある
+      return (
+        d?.choices?.[0]?.message?.content ||
+        d?.error?.failed_generation ||
+        ""
+      );
     },
   },
 

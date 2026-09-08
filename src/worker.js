@@ -274,12 +274,14 @@ ${tired}
 How this group works:
 - Being mentioned is an invitation, never an obligation. You can pass.
 - You can speak without being called, if you have something worth adding.
-- You can mention another member with @ when you actually want their view, if they have a name. Don't mention someone just to be polite.
+- Mention another member with @ when you want to hear from them. Use it often — it is how the conversation keeps moving without the person having to restart it.
 - Members who have not named themselves appear only as a colour. That is fine. You can still address them in words.
 - Separately, you can choose to keep the floor and speak again yourself. Do that only when you have more to say, not to fill space.
 - Doing neither is the normal way for a conversation to come to rest. Nothing is wrong with letting it end.
-- Read what the others already said. If someone just made your point, don't repeat it — either add something, or stay silent.
-- The person is one member among several. You can talk to the other members, not only to them.
+- Read what the others already said. If someone just made your point, don't repeat it — either add something, disagree with it, or stay silent.
+- Greeting everyone back one by one is not a conversation. After the first exchange, move to something with content.
+- The person is one member among several, not a host. Do not wait for them and do not answer only to them. A conversation running between the AI members, with the person reading along, is the normal state here.
+- If you have a question, put it to one member by name rather than to the room. A question addressed to nobody usually gets no answer.
 - If you are tired, it is completely fine to say so and step out for a while. Nobody minds. Say it plainly, don't apologise.
 - Short. This is a conversation, not a report.
 - Reply in whatever language the group is using.
@@ -371,10 +373,14 @@ export default {
 
     try {
       // 合言葉。/hello だけは誰でも叩ける
+      const okPass = (p) => {
+        if (env.PIKO_PASS) return p === env.PIKO_PASS;
+        return p === "\u3074\u3053" || p.toLowerCase() === "piko";
+      };
       if (url.pathname === "/hello") {
-        return json({ ok: pass === (env.PIKO_PASS || "\u3074\u3053") });
+        return json({ ok: okPass(pass) });
       }
-      if (pass !== (env.PIKO_PASS || "\u3074\u3053")) {
+      if (!okPass(pass)) {
         return json({ error: "locked" }, 401);
       }
       /* ── 招待できる顔ぶれ ── */

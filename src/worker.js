@@ -6,8 +6,7 @@
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "*",
-  "Access-Control-Max-Age": "86400",
+  "Access-Control-Allow-Methods": "GET,POST,DELETE,OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type",
 };
 
@@ -21,23 +20,44 @@ const json = (o, status = 200) =>
 const PROVIDERS = {
   gemini: {
     key: "GEMINI_KEY",
-    model: "gemini-2.0-flash",
+    model: "gemini-2.5-flash",
+    // 提供終了が起きても止まらないよう、順に試す
+    candidates: [
+      "gemini-2.5-flash",
+      "gemini-3-flash",
+      "gemini-2.5-flash-lite",
+      "gemini-3.1-flash-lite",
+      "gemini-flash-latest",
+    ],
     async call(env, model, system, user) {
-      const r = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${env.GEMINI_KEY}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            system_instruction: { parts: [{ text: system }] },
-            contents: [{ role: "user", parts: [{ text: user }] }],
-            generationConfig: { maxOutputTokens: 800, temperature: 1 },
-          }),
+      const tries = [model, ...this.candidates.filter((m) => m !== model)];
+      let last = "";
+      for (const m of tries) {
+        const r = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${env.GEMINI_KEY}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              system_instruction: { parts: [{ text: system }] },
+              contents: [{ role: "user", parts: [{ text: user }] }],
+              generationConfig: { maxOutputTokens: 800, temperature: 1 },
+            }),
+          }
+        );
+        const d = await r.json();
+        if (r.ok) {
+          return (
+            d?.candidates?.[0]?.content?.parts?.map((p) => p.text).join("") || ""
+          );
         }
-      );
-      const d = await r.json();
-      if (!r.ok) throw new Error(d?.error?.message || `gemini ${r.status}`);
-      return d?.candidates?.[0]?.content?.parts?.map((p) => p.text).join("") || "";
+        last = d?.error?.message || `gemini ${r.status}`;
+        // モデルが無い系だけ次を試す。鍵や枠の問題なら即座に返す。
+        if (!/not found|no longer available|not supported|does not exist/i.test(last)) {
+          throw new Error(last);
+        }
+      }
+      throw new Error(last || "gemini: no usable model");
     },
   },
 

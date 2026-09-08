@@ -6,3 +6,5 @@ compatibility_date = "2026-01-01"
 binding = "DB"
 database_name = "piko"
 database_id = "ba03b4af-41a9-45b9-896d-808be6194fd0"
+[ai]
+binding = "AI"

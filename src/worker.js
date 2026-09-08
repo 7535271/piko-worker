@@ -349,9 +349,13 @@ async function setup(env) {
        text TEXT NOT NULL,
        named INTEGER DEFAULT 0,
        leaving INTEGER DEFAULT 0,
+       card TEXT,
        at INTEGER NOT NULL
      )`
   ).run();
+  try {
+    await env.DB.prepare(`ALTER TABLE lines ADD COLUMN card TEXT`).run();
+  } catch {}
   await env.DB.prepare(
     `CREATE INDEX IF NOT EXISTS lines_room_id ON lines (room, id)`
   ).run();
@@ -363,8 +367,16 @@ export default {
 
     const url = new URL(req.url);
     const room = url.searchParams.get("room") || "main";
+    const pass = url.searchParams.get("k") || "";
 
     try {
+      // 合言葉。/hello だけは誰でも叩ける
+      if (url.pathname === "/hello") {
+        return json({ ok: pass === (env.PIKO_PASS || "\u3074\u3053") });
+      }
+      if (pass !== (env.PIKO_PASS || "\u3074\u3053")) {
+        return json({ error: "locked" }, 401);
+      }
       /* ── 招待できる顔ぶれ ── */
       if (url.pathname === "/roster") {
         return json({ roster: roster(env) });
@@ -411,7 +423,7 @@ export default {
       if (url.pathname === "/log" && req.method === "GET") {
         await setup(env);
         const { results } = await env.DB.prepare(
-          `SELECT id, who, seat, text, named, leaving, at
+          `SELECT id, who, seat, text, named, leaving, card, at
              FROM lines WHERE room = ? ORDER BY id ASC LIMIT 400`
         )
           .bind(room)
@@ -424,8 +436,8 @@ export default {
         await setup(env);
         const b = await req.json();
         await env.DB.prepare(
-          `INSERT INTO lines (room, who, seat, text, named, leaving, at)
-           VALUES (?, ?, ?, ?, ?, ?, ?)`
+          `INSERT INTO lines (room, who, seat, text, named, leaving, card, at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
         )
           .bind(
             room,
@@ -434,6 +446,7 @@ export default {
             b.text || "",
             b.named ? 1 : 0,
             b.leaving ? 1 : 0,
+            b.card || "",
             Date.now()
           )
           .run();

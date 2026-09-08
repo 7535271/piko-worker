@@ -130,24 +130,35 @@ const HOMES = {
     needs: "GROQ_KEY",
     ready: (env) => !!env.GROQ_KEY,
     async call(env, model, system, user) {
-      const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${env.GROQ_KEY}`,
-        },
-        body: JSON.stringify({
+      const send = async (strict) => {
+        const body = {
           model,
           max_tokens: 800,
-          response_format: { type: "json_object" },
           messages: [
             { role: "system", content: system },
             { role: "user", content: user },
           ],
-        }),
-      });
-      const d = await r.json();
-      if (!r.ok) throw new Error(d?.error?.message || `groq ${r.status}`);
+        };
+        if (strict) body.response_format = { type: "json_object" };
+        const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${env.GROQ_KEY}`,
+          },
+          body: JSON.stringify(body),
+        });
+        const d = await r.json();
+        return { ok: r.ok, d, status: r.status };
+      };
+
+      let { ok, d, status } = await send(true);
+      // JSONの型を守れない子は、指定を外して普通に喋らせる
+      if (!ok && /failed to generate json|json_validate|response_format/i.test(
+            d?.error?.message || "")) {
+        ({ ok, d, status } = await send(false));
+      }
+      if (!ok) throw new Error(d?.error?.message || `groq ${status}`);
       return d?.choices?.[0]?.message?.content || "";
     },
   },

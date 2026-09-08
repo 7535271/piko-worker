@@ -221,14 +221,13 @@ const HOMES = {
   },
 };
 
-/* 同じ会社・同じ規模で複数の財布にいる場合、余裕のある方を残す */
+/* 会社ごとに、一番余裕のある子ひとりだけに印をつける */
 function roster(env) {
   const live = CATALOG.filter((c) => HOMES[c.home]?.ready(env));
   const best = new Map();
   for (const c of live) {
-    const k = c.org + "|" + c.label.replace(/\s+\d+(\.\d+)?B?$/i, "");
-    const cur = best.get(k);
-    if (!cur || c.room > cur.room) best.set(k, c);
+    const cur = best.get(c.org);
+    if (!cur || c.room > cur.room) best.set(c.org, c);
   }
   const winners = new Set([...best.values()].map((c) => c.id));
   return live.map((c) => ({

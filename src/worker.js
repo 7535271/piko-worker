@@ -41,8 +41,6 @@ const CATALOG = [
   // 🇺🇸 Google
   { id: "cf:gemma4", label: "Gemma 4 26B", org: "Google", flag: "🇺🇸",
     home: "cloudflare", model: "@cf/google/gemma-4-26b-a4b-it", room: 480 },
-  { id: "cf:gemma3", label: "Gemma 3 12B", org: "Google", flag: "🇺🇸",
-    home: "cloudflare", model: "@cf/google/gemma-3-12b-it", room: 330 },
   { id: "cf:sealion", label: "Gemma SEA-LION 27B", org: "AI Singapore", flag: "🇸🇬",
     home: "cloudflare", model: "@cf/aisingapore/gemma-sea-lion-v4-27b-it", room: 330 },
   { id: "gemini:flash", label: "Gemini Flash", org: "Google", flag: "🇺🇸",
@@ -83,20 +81,42 @@ const CATALOG = [
     home: "cloudflare", model: "@cf/nvidia/nemotron-3-120b-a12b", room: 130 },
 ];
 
+const SHAPE = {
+  type: "object",
+  properties: {
+    speak: { type: "boolean" },
+    text: { type: "string" },
+    name: { type: "string" },
+    stay: { type: "boolean" },
+    leaving: { type: "boolean" },
+  },
+  required: ["speak", "text", "name", "stay", "leaving"],
+};
+
 /* ── 財布 ── */
 const HOMES = {
   cloudflare: {
     needs: null, // バインディングだけ。キー不要
     ready: (env) => !!env.AI,
     async call(env, model, system, user) {
-      const r = await env.AI.run(model, {
+      const body = {
         messages: [
           { role: "system", content: system },
           { role: "user", content: user },
         ],
         max_tokens: 800,
-      });
-      return r?.response ?? r?.result?.response ?? "";
+        response_format: { type: "json_schema", json_schema: SHAPE },
+      };
+      let r;
+      try {
+        r = await env.AI.run(model, body);
+      } catch (e) {
+        // 形の指定を受けつけない子は、指定なしでもう一度
+        delete body.response_format;
+        r = await env.AI.run(model, body);
+      }
+      const out = r?.response ?? r?.result?.response ?? r;
+      return typeof out === "string" ? out : JSON.stringify(out);
     },
   },
 
@@ -113,6 +133,7 @@ const HOMES = {
         body: JSON.stringify({
           model,
           max_tokens: 800,
+          response_format: { type: "json_object" },
           messages: [
             { role: "system", content: system },
             { role: "user", content: user },
@@ -147,7 +168,11 @@ const HOMES = {
             body: JSON.stringify({
               system_instruction: { parts: [{ text: system }] },
               contents: [{ role: "user", parts: [{ text: user }] }],
-              generationConfig: { maxOutputTokens: 800, temperature: 1 },
+              generationConfig: {
+                maxOutputTokens: 800,
+                temperature: 1,
+                responseMimeType: "application/json",
+              },
             }),
           }
         );
@@ -272,19 +297,38 @@ leaving: true only if you are stepping out to rest.`;
 }
 
 function parseReply(raw) {
-  const cleaned = String(raw || "").replace(/```json|```/g, "").trim();
-  try {
-    return JSON.parse(cleaned);
-  } catch {
-    const a = cleaned.indexOf("{");
-    const b = cleaned.lastIndexOf("}");
-    if (a !== -1 && b > a) {
-      try {
-        return JSON.parse(cleaned.slice(a, b + 1));
-      } catch {}
-    }
-    return { speak: false, text: "", name: "", stay: false, leaving: false };
+  let t = String(raw || "");
+  // 推論モデルの独り言を落とす
+  t = t.replace(/<think>[\s\S]*?<\/think>/gi, "");
+  t = t.replace(/<\|[^|]*\|>/g, "");
+  t = t.replace(/```json|```/g, "").trim();
+
+  const tries = [t];
+  const a = t.indexOf("{");
+  const b = t.lastIndexOf("}");
+  if (a !== -1 && b > a) tries.push(t.slice(a, b + 1));
+
+  for (const c of tries) {
+    try {
+      const o = JSON.parse(c);
+      if (o && typeof o === "object") {
+        return {
+          speak: o.speak !== false && !!String(o.text || "").trim(),
+          text: String(o.text || ""),
+          name: String(o.name || ""),
+          stay: !!o.stay,
+          leaving: !!o.leaving,
+        };
+      }
+    } catch {}
   }
+
+  // JSONじゃないけど中身はある → そのまま発言として拾う
+  const plain = t.replace(/^[^\S\n]*[{\[][\s\S]*$/, "").trim();
+  if (plain) {
+    return { speak: true, text: plain.slice(0, 600), name: "", stay: false, leaving: false };
+  }
+  return { speak: false, text: "", name: "", stay: false, leaving: false, unreadable: true };
 }
 
 async function setup(env) {

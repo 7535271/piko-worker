@@ -29,8 +29,10 @@ const CATALOG = [
   // 🇨🇳 Qwen
   { id: "cf:qwen3-30b", label: "Qwen3 30B", org: "Qwen", flag: "🇨🇳",
     home: "cloudflare", model: "@cf/qwen/qwen3-30b-a3b-fp8", room: 770 },
-  { id: "groq:qwen3-32b", label: "Qwen3 32B", org: "Qwen", flag: "🇨🇳",
-    home: "groq", model: "qwen/qwen3-32b", room: 14400 },
+  { id: "groq:qwen38", label: "Qwen3.8 27B", org: "Qwen", flag: "🇨🇳",
+    home: "groq", model: "qwen/qwen3.8-27b", room: 14400 },
+  { id: "groq:qwen36", label: "Qwen3.6 27B", org: "Qwen", flag: "🇨🇳",
+    home: "groq", model: "qwen/qwen3.6-27b", room: 14400 },
   { id: "cf:qwq-32b", label: "QwQ 32B", org: "Qwen", flag: "🇨🇳",
     home: "cloudflare", model: "@cf/qwen/qwq-32b", room: 130 },
 
@@ -53,28 +55,32 @@ const CATALOG = [
     home: "cloudflare", model: "@cf/mistral/mistral-7b-instruct-v0.1", room: 1300 },
 
   // 🇺🇸 Meta
-  { id: "groq:llama-70b", label: "Llama 3.3 70B", org: "Meta", flag: "🇺🇸",
-    home: "groq", model: "llama-3.3-70b-versatile", room: 14400 },
   { id: "cf:llama-scout", label: "Llama 4 Scout", org: "Meta", flag: "🇺🇸",
     home: "cloudflare", model: "@cf/meta/llama-4-scout-17b-16e-instruct", room: 175 },
-  { id: "groq:llama-8b", label: "Llama 3.1 8B", org: "Meta", flag: "🇺🇸",
-    home: "groq", model: "llama-3.1-8b-instant", room: 14400 },
   { id: "cf:llama-3b", label: "Llama 3.2 3B", org: "Meta", flag: "🇺🇸",
     home: "cloudflare", model: "@cf/meta/llama-3.2-3b-instruct", room: 770 },
 
   // 🇺🇸 OpenAI（開いてる方）
   { id: "groq:oss-120b", label: "GPT-OSS 120B", org: "OpenAI", flag: "🇺🇸",
     home: "groq", model: "openai/gpt-oss-120b", room: 14400 },
+  { id: "groq:oss-20b", label: "GPT-OSS 20B", org: "OpenAI", flag: "🇺🇸",
+    home: "groq", model: "openai/gpt-oss-20b", room: 14400 },
   { id: "cf:oss-20b", label: "GPT-OSS 20B", org: "OpenAI", flag: "🇺🇸",
     home: "cloudflare", model: "@cf/openai/gpt-oss-20b", room: 250 },
+
+  // 🇺🇸 Groq
+  { id: "groq:compound", label: "Compound", org: "Groq", flag: "🇺🇸",
+    home: "groq", model: "groq/compound", room: 14400 },
+  { id: "groq:compound-mini", label: "Compound mini", org: "Groq", flag: "🇺🇸",
+    home: "groq", model: "groq/compound-mini", room: 14400 },
+
+  // 🇸🇦 SDAIA
+  { id: "groq:allam", label: "ALLaM 2 7B", org: "SDAIA", flag: "🇸🇦",
+    home: "groq", model: "allam-2-7b", room: 14400 },
 
   // 🇨🇳 DeepSeek
   { id: "cf:ds-r1", label: "DeepSeek R1 distill", org: "DeepSeek", flag: "🇨🇳",
     home: "cloudflare", model: "@cf/deepseek-ai/deepseek-r1-distill-qwen-32b", room: 120 },
-
-  // 🇨🇳 Moonshot
-  { id: "groq:kimi", label: "Kimi K2", org: "Moonshot", flag: "🇨🇳",
-    home: "groq", model: "moonshotai/kimi-k2-instruct", room: 14400 },
 
   // 🇺🇸 NVIDIA
   { id: "cf:nemotron", label: "Nemotron 3", org: "NVIDIA", flag: "🇺🇸",
